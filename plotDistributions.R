@@ -2,6 +2,20 @@ rm(list = ls())
 library(e1071)
 library(caret)
 
+
+gg.histogram <- function(ds, x, x.label, y.label, title){
+  
+  p <- ggplot(ds, aes_string(x = x)) + geom_histogram() + 
+    labs(x=x.label, y=y.label,
+         title = "Missing Tags: Number of Days Active") +
+    theme(text = element_text(size=16), 
+          axis.text = element_text(size=16,color = "black"), 
+          panel.grid.major = element_line(colour = "gray"),
+          panel.background = element_rect(colour = "black"))
+  return(p)
+}
+
+
 # error function/metric
 llfun <- function(actual, prediction) {
   epsilon <- .000000000000001
@@ -48,28 +62,14 @@ numeric_col     <- grep("n_", names(train.x))
 categorical_col <- grep("c_", names(train.x))
 ordinal_col     <- grep("o_", names(train.x)) 
 
-results <- matrix(0, nrow = nrow(test.x), ncol = (ncol(train.y)-1))
 
 
-# create test set after model
-# probs <- predict(glmFit1, newdata = train.ds[-inTraining, ])
-ll <- rep(0, (ncol(train.y)-1))
-set.seed(998)
-for(i in 2:ncol(train.y)){
-  print(i)
-  # create partition
-  
-  inTraining <- createDataPartition(train.y[,i] , p = .8, list = F)
-
-  #generate model
-  
-  m <- naiveBayes(x = train.x[inTraining, numeric_col], 
-                  y = train.y[inTraining,i] )
-  p <- predict( m, train.x[-inTraining, numeric_col], type = "raw")
-  p[is.na(p)] <- 0.5
-#   results[,i] <- p[,2]
-  ll[(i-1)] <- llfun(train.y[-inTraining, i],p[,2])
+for(i in 1:ncol(train.x)){
+  p <- gg.histogram(train.x, names(train.x)[i],
+                    x.label = names(train.x)[i],
+                    y.label = "count", 
+                    title = ""
+                    )
+  ggsave(paste0("Plots/", names(train.x)[i], ".png"))
 }
-
-
 

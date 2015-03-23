@@ -31,6 +31,9 @@ eliminate.cols <- unique(c(which(na.zero.cols), constant.cols))
 train.x <- train.x[,-eliminate.cols]
 test.x  <- test.x[,-eliminate.cols]
 
+
+# find any binary columns and convert them
+
 # identify numeric/categorical/ordinal data
 numeric_col     <- grep("n_", names(train.x))
 categorical_col <- grep("c_", names(train.x))
