@@ -76,4 +76,6 @@ for( i in 1:ncol(temp)){
   }
 }
 
-write.csv(attribute.summary, file = "Data/attributeSummary.csv")
+# write.csv(attribute.summary, file = "Data/attributeSummary.csv")
+write.csv(attribute.summary, file = "C:/Users//Chris//Dropbox/Kaggle/attributeSummary.csv")
+
