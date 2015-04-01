@@ -56,27 +56,12 @@ ordinal_col     <- grep("o_", names(train.x))
 na.vals <- which(is.na(train.x[,ordinal_col]))
 train.x[, ordinal_col] <- 0
 
-# create subset of training data to perform feature selection
-for( i in 2:ncol(train.y)){
-  selection.train <- createDataPartition(train.y[,i], p = 0.5)
+
+# categorical data
+# for each col of train y get xtabs for all features
+for( i in 1:length(categorical_col)){
+   
+  
+  
 }
-
-
-set.seed(7)
-selection.train <- unlist(createDataPartition(factor(train.y[,2]), p = 0.2))
-
-# ensure the results are repeatable
-
-# define the control using a random forest selection function
-control <- rfeControl(functions=rfFuncs, method="cv", number=5)
-# run the RFE algorithm
-results <- rfe(train.x[selection.train, categorical_col], 
-               factor(train.y[selection.train,2]), sizes=c(5), rfeControl=control)
-# summarize the results
-print(results)
-# list the chosen features
-predictors(results)
-# plot the results
-plot(results, type=c("g", "o"))
-
-
+ftable(xtabs( ~ service_a + c_0328 + c_0327, data = cbind(train.x, train.y)))

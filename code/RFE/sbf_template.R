@@ -59,7 +59,8 @@ set.seed(7)
 # define the control using a random forest selection function
 control <- sbfControl(functions=rfSBF, method="cv", number=10)
 # run the RFE algorithm
-results <- sbf(train.x[, categorical_col], train.y[,2],sbfControl = control)
+results <- sbf(train.x[, categorical_col], as.factor(train.y[,2]),
+               sbfControl = control)
 # summarize the results
 print(results)
 # list the chosen features
