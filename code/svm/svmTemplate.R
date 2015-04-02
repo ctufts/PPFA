@@ -25,11 +25,16 @@ ordinal_col     <- grep("o_", names(train.x))
 # impute missing ordinal and numeric values
 train.x[, numeric_col][is.na(train.x[,numeric_col])] <- 0
 train.x[, ordinal_col][is.na(train.x[,ordinal_col])] <- 0
+test.x[, numeric_col][is.na(test.x[,numeric_col])] <- 0
+test.x[, ordinal_col][is.na(test.x[,ordinal_col])] <- 0
+
+
 for( i in 1:length(categorical_col)){
   test.x[,categorical_col[i]] <- factor(test.x[,categorical_col[i]],
                                         levels = levels(train.x[,categorical_col[i]])
   )
 }
+test.x[, categorical_col][is.na(test.x[,categorical_col])] <- ""
 
 
 
@@ -37,7 +42,13 @@ for( i in 1:length(categorical_col)){
 result.matrix <- matrix(0,nrow = nrow(test.x), ncol = ncol(submission))
 train.results <- rep(0, (ncol(submission)-1))
 
-for( i in 2:ncol(att.importance)){
+
+
+
+
+
+
+for( i in 2:2){#ncol(att.importance)){
   print(i)
   
   # identify valid features and create formula
@@ -48,13 +59,14 @@ for( i in 2:ncol(att.importance)){
     paste(valid.features, collapse = " + ")
   ))
   # split training data into training and test sets
-  train <- createDataPartition(factor(train.y[, i]), p = 0.75)
+ 
   
   set.seed(998)
   inTraining <- createDataPartition(train.y[,i], p = .75, list = F)
   
   
-  train.ds <- cbind(train.y[,i], train.x)
+  train.ds <- cbind(train.y[,i], train.x[, valid.features])
+  test <- test.x[, valid.features]
   names(train.ds)[1] <- names(train.y)[i]
   
   print("train model")
@@ -62,11 +74,11 @@ for( i in 2:ncol(att.importance)){
   set.seed(825)
  
   svmFit <- svm(f, data = train.ds[inTraining, ],
+                probability = T ,
                 type = "C-classification",
-                gamma = 1e-1, probability = T )
+                gamma = 1e-1)
 
-  probs <- attr(predict(svmFit, 
-                        newdata = train.ds[-inTraining, ],
+  probs <- attr(predict(svmFit, train.ds[-inTraining, ],
                   probability = T, 
                   decision.values = F), "probabilities")[,1]
   
@@ -74,7 +86,7 @@ for( i in 2:ncol(att.importance)){
   
   train.results[(i-1)] <- error
   
-  test.probs <-attr(predict(svmFit, newdata = test.x,
+  test.probs <-attr(predict(svmFit, newdata = test,
                             probability = T, 
                             decision.values = F), "probabilities")[,1]
   
