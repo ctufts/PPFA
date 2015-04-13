@@ -1,6 +1,6 @@
 rm(list = ls())
 library(caret)
-library(e1071)
+library(gbm)
 att.importance <- read.csv("Data/attributeSummary.csv")
 
 # error function/metric
@@ -25,85 +25,60 @@ ordinal_col     <- grep("o_", names(train.x))
 # impute missing ordinal and numeric values
 train.x[, numeric_col][is.na(train.x[,numeric_col])] <- 0
 train.x[, ordinal_col][is.na(train.x[,ordinal_col])] <- 0
-test.x[, numeric_col][is.na(test.x[,numeric_col])] <- 0
-test.x[, ordinal_col][is.na(test.x[,ordinal_col])] <- 0
-
-
-for( i in 1:length(categorical_col)){
-  l <- unique(c(levels(train.x[, categorical_col[i]]),
-                levels(test.x[,categorical_col[i]])
-                ))
-  test.x[,categorical_col[i]] <- factor(test.x[,categorical_col[i]],
-                                        levels = l)
-  train.x[,categorical_col[i]] <- factor(train.x[,categorical_col[i]],
-                                        levels = l)
-  
-}
-# test.x[, categorical_col][is.na(test.x[,categorical_col])] <- ""
-na.train.col <- which(apply(train.x,2, function(x)any(is.na(x))))
-na.test.col <- (apply(test.x,2, function(x)sum(is.na(x))))
-
-
 
 result.matrix <- matrix(0,nrow = nrow(test.x), ncol = ncol(submission))
 train.results <- rep(0, (ncol(submission)-1))
-
-
-
-
-
-
-
+n.trees <- 5000
 for( i in 2:ncol(att.importance)){
   print(i)
   
   # identify valid features and create formula
-  q <- quantile(att.importance[,i], 0.85)
+#   q <- quantile(att.importance[,i], 0.25)
+  q <- 0
   valid.features <- as.character(att.importance$X[att.importance[,i] > q])
   f <- formula(paste(
     names(train.y)[i], " ~ ",
     paste(valid.features, collapse = " + ")
-  ))
+    ))
   # split training data into training and test sets
- 
+  train <- createDataPartition(factor(train.y[, i]), p = 0.75)
   
   set.seed(998)
   inTraining <- createDataPartition(train.y[,i], p = .75, list = F)
-  
-  
+ 
   train.ds <- cbind(train.y[,i], train.x[, valid.features])
-  test <- test.x[, valid.features]
   names(train.ds)[1] <- names(train.y)[i]
   
   print("train model")
   #generate model
   set.seed(825)
- 
-  svmFit <- ksvm(f, data = train.ds[inTraining, ],
-                prob.model = T ,
-                type = "C-svc")
+
+  gbmFit <- gbm(f, data = train.ds[inTraining, ],
+                   n.trees = n.trees, 
+                   distribution = "adaboost")
+  # create test set after model
+  probs <- predict(gbmFit, newdata = train.ds[-inTraining, ],
+                   n.trees = n.trees, type = "response")
   
-  
-  probs <- predict(svmFit, train.ds[-inTraining, ], type = "probabilities")
-  
-  error <- llfun(train.y[-inTraining,i], probs[, colnames(probs)=="1"])
+  error <- llfun(train.y[-inTraining,i], probs)
   
   train.results[(i-1)] <- error
   
-  test.probs <-predict(svmFit, test,type =  "probabilities")
+  test.probs <- predict(gbmFit, newdata = test.x, n.trees = n.trees,
+                        type = "response")
   
-  result.matrix[,i] <- test.probs[, colnames(test.probs)=="1"]
+  result.matrix[,i] <- test.probs
   
   
   
-  
+
 }
 
 result.matrix[,1] <- test.x$id
 result.df <- as.data.frame(result.matrix)
 names(result.df) <- names(submission)
+# write.csv(result.df, "Data/results/gbm_5000treesSubmission20150402.csv", quote = F,
+#           row.names = F)
+# write.csv(train.results, "Data/results/gbm_trainResults20150402.csv", quote = F,
+#           row.names = F)
 
-write.csv(result.df, "Data/results/svm_submission20150402.csv", quote = F,
-          row.names = F)
-write.csv(train.results, "Data/results/svm_trainResults20150402.csv", quote = F,
-          row.names = F)
